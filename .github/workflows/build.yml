@@ -29,6 +29,26 @@ jobs:
       - name: Extract Android project
         run: unzip -o DanmakuOverlay-source.zip -d /tmp/danmaku-source
 
+      - name: Align Java and Kotlin targets
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("/tmp/danmaku-source/DanmakuOverlay/app/build.gradle.kts")
+          s = p.read_text()
+          if "compileOptions" not in s:
+              s = s.rstrip()
+              if not s.endswith("}"):
+                  raise SystemExit("Could not find the end of build.gradle.kts")
+              s = s[:-1] + """
+              compileOptions {
+                  sourceCompatibility = JavaVersion.VERSION_17
+                  targetCompatibility = JavaVersion.VERSION_17
+              }
+          }
+          """
+              p.write_text(s)
+          PY
+
       - name: Build debug APK
         working-directory: /tmp/danmaku-source/DanmakuOverlay
         run: gradle assembleDebug
